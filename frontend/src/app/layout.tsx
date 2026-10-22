@@ -24,6 +24,11 @@ export default function RootLayout({
             <Suspense fallback={<div className="h-16 bg-[#2D241E] border-b border-stone-800" />}>
               <Navbar />
             </Suspense>
+            {process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && (
+              <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-xs text-amber-900">
+                Interactive demo: orders stay in this browser. The Java/JDBC database backend runs separately on your laptop.
+              </div>
+            )}
             <main className="flex-1 flex flex-col">{children}</main>
             <Footer />
           </CartProvider>

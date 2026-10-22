@@ -3,6 +3,15 @@
 BACSE202 Database Systems course project. Next.js frontend, Spring Boot backend,
 SQL repositories through Spring JDBC, and an embedded H2 development database.
 
+## Open the hosted website
+
+**https://aaron-rby.github.io/savour-delivery/**
+
+GitHub Pages hosts the interactive frontend demo. Demo orders and changes stay
+in each visitor's browser and do not connect to a shared Java/JDBC database.
+Use the laptop setup below for the full backend. Pushes to `main` automatically
+build and publish the website through `.github/workflows/pages.yml`.
+
 ## Run on your own laptop
 
 Install these first and reopen your terminal:

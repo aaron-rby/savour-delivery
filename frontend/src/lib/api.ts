@@ -4,6 +4,13 @@ import { dbStore } from './store';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
+async function fetchBackend(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+    throw new Error('GitHub Pages uses the browser demo store');
+  }
+  return fetch(input, init);
+}
+
 export interface BackendHealthResponse {
   connected: boolean;
   mode: 'ORACLE_JDBC' | 'H2_COMPATIBLE' | 'STANDALONE_DEMO';
@@ -17,7 +24,7 @@ export async function checkBackendHealth(): Promise<BackendHealthResponse> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 1500);
 
-    const res = await fetch(`${API_BASE_URL}/health`, {
+    const res = await fetchBackend(`${API_BASE_URL}/health`, {
       signal: controller.signal,
       cache: 'no-store'
     });
@@ -116,7 +123,7 @@ export async function getRestaurants(cuisine?: string, search?: string): Promise
   try {
     const url = new URL(`${API_BASE_URL}/restaurants`);
     if (cuisine && cuisine !== 'All') url.searchParams.set('cuisine', cuisine);
-    const res = await fetch(url.toString(), { cache: 'no-store' });
+    const res = await fetchBackend(url.toString(), { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -136,7 +143,7 @@ export async function getRestaurants(cuisine?: string, search?: string): Promise
 
 export async function getRestaurantById(id: number): Promise<Restaurant | undefined> {
   try {
-    const res = await fetch(`${API_BASE_URL}/restaurants/${id}`, { cache: 'no-store' });
+    const res = await fetchBackend(`${API_BASE_URL}/restaurants/${id}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       return normalizeRestaurant(data);
@@ -150,7 +157,7 @@ export async function getRestaurantById(id: number): Promise<Restaurant | undefi
 
 export async function getMenuItems(restaurantId: number): Promise<MenuItem[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}/menu`, { cache: 'no-store' });
+    const res = await fetchBackend(`${API_BASE_URL}/restaurants/${restaurantId}/menu`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -165,7 +172,7 @@ export async function getMenuItems(restaurantId: number): Promise<MenuItem[]> {
 
 export async function toggleMenuItemAvailability(restaurantId: number, itemId: number, isAvailable: boolean): Promise<void> {
   try {
-    const res = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}/menu/${itemId}/availability?available=${isAvailable}`, {
+    const res = await fetchBackend(`${API_BASE_URL}/restaurants/${restaurantId}/menu/${itemId}/availability?available=${isAvailable}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -243,7 +250,7 @@ function normalizeOrder(raw: any): Order {
 export async function getOrders(customerId?: number): Promise<Order[]> {
   try {
     const endpoint = customerId ? `${API_BASE_URL}/orders/customer/${customerId}` : `${API_BASE_URL}/orders`;
-    const res = await fetch(endpoint, { cache: 'no-store' });
+    const res = await fetchBackend(endpoint, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       return Array.isArray(data) ? data.map(normalizeOrder) : [];
@@ -256,7 +263,7 @@ export async function getOrders(customerId?: number): Promise<Order[]> {
 
 export async function getOrderById(orderId: number): Promise<Order | undefined> {
   try {
-    const res = await fetch(`${API_BASE_URL}/orders/${orderId}`, { cache: 'no-store' });
+    const res = await fetchBackend(`${API_BASE_URL}/orders/${orderId}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       return normalizeOrder(data);
@@ -291,7 +298,7 @@ export async function createOrder(payload: {
   };
 
   try {
-    const res = await fetch(`${API_BASE_URL}/orders`, {
+    const res = await fetchBackend(`${API_BASE_URL}/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(backendPayload)
@@ -320,7 +327,7 @@ export async function createOrder(payload: {
 
 export async function updateOrderStatus(orderId: number, status: OrderStatus): Promise<Order> {
   try {
-    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/status?status=${status}`, {
+    const res = await fetchBackend(`${API_BASE_URL}/orders/${orderId}/status?status=${status}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -348,7 +355,7 @@ export async function submitReview(payload: {
   comment?: string;
 }): Promise<Review> {
   try {
-    const res = await fetch(`${API_BASE_URL}/reviews`, {
+    const res = await fetchBackend(`${API_BASE_URL}/reviews`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -372,7 +379,7 @@ export async function submitReview(payload: {
 // Admin Metrics
 export async function getDatabaseMetrics(): Promise<DatabaseMetrics> {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/metrics`, { cache: 'no-store' });
+    const res = await fetchBackend(`${API_BASE_URL}/admin/metrics`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch {
     // Fallback
