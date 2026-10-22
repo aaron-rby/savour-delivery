@@ -1,121 +1,133 @@
-# Savour DELIVERY
+# SAVOUR: Food Delivery System
 
-**BACSE202 · Database Systems · Phase 2**
+BACSE202 Database Systems course project. Next.js frontend, Spring Boot backend,
+SQL repositories through Spring JDBC, and an embedded H2 development database.
 
-A food-delivery project using **Java, JDBC, Oracle SQL and HTML/CSS/JavaScript**.
+## Run on your own laptop
 
-**[Open the website](https://aaron-rby.github.io/savour-delivery/)** · [Project guide](docs/COMPLETE_PROJECT_GUIDE.md) · [Database setup](database/README.md)
+Install these first and reopen your terminal:
 
-## Features
+- Git
+- Java JDK **21 or newer** (`java -version`)
+- Maven **3.8 or newer** (`mvn -version`)
+- Node.js **22 or newer** and npm (`node --version`, `npm --version`)
 
-- **Customer:** browse restaurants, read food descriptions, build a cart, place orders and view personal order history.
-- **Partners:** view assigned deliveries, record pickup, simulated payment and completion.
-- **Admin:** manage menus using a restaurant dropdown, add restaurants and dishes, prepare orders and assign partners. Red × buttons remove unused customers, partners, restaurants and food; order/delivery history stays protected.
-- **Add user:** choose Customer, Delivery partner or Both. Both roles share one user ID.
-
-The website now uses a shared Java/Oracle backend through a temporary HTTPS tunnel. Your computer, Oracle, Java server and tunnel must stay running. Views refresh every five seconds when no form is being edited. The site retries an offline backend and disables saving until reconnection. Previous browser-only orders are not imported.
-
-**Classroom demo:** no login or enforced role permissions; anyone can choose Admin. Use fictional information. Payments are simulated. The complete project source and public website are now in this single public repository.
-
-## Folder structure
+Set `JAVA_HOME` to your JDK directory if Maven cannot find Java.
+The convenience `backend/mvnw` uses installed Maven and does not download it.
 
 ```text
-backend/     Java source, tests, run scripts, example config and driver instructions
-database/    Oracle DDL, sample data and review queries
-docs/        Guides, relations/EER, normalization, evidence and Phase 2 PPT
-frontend/    Local interface; site/ contains the hosted public website
-BACSE202_Course_Project_Overview.pdf
-Food-Delivery-System.pdf
-README.md
+git clone https://github.com/aaron-rby/savour-delivery.git
+cd savour-delivery
 ```
 
-## Java backend
+### Windows PowerShell
 
-| File | Responsibility |
-|---|---|
-| [WebServer.java](backend/WebServer.java) | Uses the JDK HTTP server to serve the frontend and expose GET/POST `/api`. Parses form requests and returns JSON. Allows the configured GitHub Pages origin to access the shared API. |
-| [FoodService.java](backend/FoodService.java) | Opens Oracle with `DriverManager.getConnection`, binds SQL values with `PreparedStatement`, validates operations, and commits or rolls back transactions. |
-| [Phase2Test.java](backend/tests/Phase2Test.java) | Checks Oracle constraints, accounts/roles, checkout, historical prices, preparation, payment, assignment and delivery; removes its temporary records. |
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+This installs frontend dependencies on first use and opens two server terminals.
+Wait for the backend's `Started SavourApplication` and frontend's `Ready` messages.
+Stop with Ctrl+C in each server terminal. The execution-policy option applies
+only to this PowerShell process.
+
+### macOS or Linux
+
+```bash
+bash start.sh
+```
+
+Both server logs appear in the terminal. Press Ctrl+C to stop.
+
+### Local links
+
+- Application: **http://localhost:3000**
+- Backend: **http://localhost:8081/api/health**
+- Database connectivity: **http://localhost:8081/api/health/db**
+
+**Localhost means the laptop opening the link.** Your friends must run the app
+on their laptops before opening these links. GitHub distributes the source code
+and does not host the Java backend. A remote shared app needs a separate
+deployment or tunnel. Each laptop has its own independent demo database.
+
+## Manual startup
+
+In the first Windows terminal:
+
+```powershell
+cd backend
+$env:SERVER_PORT='8081'
+$env:APP_PROFILE='dev'
+mvn spring-boot:run
+```
+
+In the second Windows terminal:
+
+```powershell
+cd frontend
+$env:NEXT_PUBLIC_API_URL='http://localhost:8081/api'
+npm ci
+npm run dev
+```
+
+On macOS/Linux use `export SERVER_PORT=8081 APP_PROFILE=dev` and
+`export NEXT_PUBLIC_API_URL=http://localhost:8081/api` instead of `$env:...`.
+Use available ports if 3000 or 8081 is occupied, and change the frontend API URL
+to match. Default CORS permits localhost:3000 and 127.0.0.1:3000.
+Internet access is required for the first dependency installation.
+
+## Database and course evidence
+
+The dev profile initializes these nine tables from
+`backend/src/main/resources/schema.sql` and `data.sql`:
+
+`APP_USER`, `CUSTOMER`, `DELIVERY_PARTNER`, `RESTAURANT`, `MENU_ITEM`,
+`FOOD_ORDER`, `ORDER_ITEM`, `PAYMENT`, `DELIVERY`.
+
+- Primary/foreign keys, unique email/payment constraints and numeric checks.
+- Composite `ORDER_ITEM(order_id, item_id)` primary key.
+- Server validation for availability, positive quantity and single-restaurant orders.
+- Frozen `agreed_unit_price` and server-calculated Rs 50 delivery fee.
+- Transactional order header, order lines and payment insertion.
+
+The database is **in memory**. Restarting the backend resets it to seed data.
+H2 Oracle compatibility mode is not an Oracle server. Some UI badges and legacy
+documentation still say Oracle, so identify the engine from datasource
+configuration. The health endpoint's engine label alone is not Oracle evidence.
+
+## Tests
 
 ```text
-Browser → WebServer.java → FoodService.java → JDBC → Oracle FOOD_PROJECT
+cd backend
+mvn test
 ```
 
-Java handles profile creation, restaurant/dish creation, menu updates, checkout, preparation, partner assignment, pickup, simulated payment, completion and protected removals. Checkout captures agreed prices and saves the order, lines and pending payment in one transaction. Row locks protect workflow updates. Oracle credentials stay on the server.
+Verified on 22 October 2026: **12 tests, 0 failures, 0 errors, 0 skipped**
+on Windows with Java 26 and Maven 3.9.9 using the H2 test profile.
+This does not establish browser end-to-end coverage or Oracle compatibility.
 
-The implementation uses standard JDK libraries and JDBC, with no Java framework. The current server serializes API operations through one Oracle connection. For a larger shared service, connection pooling and separate request transactions would be a later improvement.
+## Presentation
 
-### Compile and run Java
+`presentation/` contains the Phase 2/3 pitch and speaking script.
+The PDF course overview is included at the repository root.
 
-Requires **JDK 17+**, Oracle Database and a compatible Oracle JDBC driver. Run these commands from the repository root:
+## Current limitations
 
-1. Follow [database setup](database/README.md) in your project schema, not SYS/SYSTEM.
-2. Put the JDBC driver at `backend/lib/ojdbc6.jar`.
-3. Copy the example configuration and fill in your own local credentials:
+- No backend delete endpoint, so complete application CRUD still needs work.
+- Some frontend API failures fall back to a local browser store. Confirm writes
+  through the API/database when demonstrating JDBC integration.
+- The frontend availability update route differs from the backend PATCH route.
+- Reviews and several display fields are local/demo features, not in the current
+  JDBC schema. Payments are demo records, not real gateway transactions.
+- Persona switching is for demonstrations, not production authentication.
+- Legacy `docs/` and `database/` files may describe an earlier schema. Use
+  `backend/src/main/resources/` as the running dev application's source of truth.
 
-```powershell
-Copy-Item backend/config/database.example.properties backend/config/database.properties
-New-Item -ItemType Directory -Force build
-javac -d build backend/FoodService.java backend/WebServer.java backend/tests/Phase2Test.java
-java -cp "build;backend/lib/ojdbc6.jar" WebServer backend/config/database.properties
-```
+## Optional Oracle setup
 
-Open **http://127.0.0.1:8788** and check the Oracle connection badge. The Windows shortcut is `backend/scripts/start.cmd`. Real configuration and JARs are ignored by Git.
-
-```powershell
-java -cp "build;backend/lib/ojdbc6.jar" Phase2Test backend/config/database.properties
-node --check frontend/app.js
-```
-
-The hosted files are in `frontend/site/`. GitHub Actions publishes that folder automatically. Update `frontend/site/backend-config.js` when the HTTPS tunnel URL changes.
-
-[JDBC details](docs/connectivity/README.md) · [Shared-backend/tunnel commands](docs/connectivity/SHARED_BACKEND.md)
-
-## Relational schema — 9 normalized tables
-
-The normalization worksheet demonstrates **3NF and BCNF under the documented functional dependencies**. Oracle enforces keys and CHECK constraints; Java transactions enforce the cross-table business rules.
-
-| Table | Primary key | Foreign keys | Notable database constraints |
-|---|---|---|---|
-| `APP_USER` | `user_id` | — | Required name; unique, lowercase email; optional phone |
-| `CUSTOMER` | `user_id` | `user_id` → `APP_USER` | Shared user ID; required `customer_since` |
-| `DELIVERY_PARTNER` | `user_id` | `user_id` → `APP_USER` | Transport: WALK/BICYCLE/MOTORBIKE/CAR; status: AVAILABLE/BUSY/OFFLINE |
-| `RESTAURANT` | `restaurant_id` | — | Required name, address, city and postal code; optional phone |
-| `MENU_ITEM` | `item_id` | `restaurant_id` → `RESTAURANT` | Positive current price; availability 0/1 |
-| `FOOD_ORDER` | `order_id` | `customer_id` → `CUSTOMER`; `restaurant_id` → `RESTAURANT` | Allowed statuses; nonnegative delivery fee; required destination and order time |
-| `ORDER_ITEM` | (`order_id`, `item_id`) | `order_id` → `FOOD_ORDER`; `item_id` → `MENU_ITEM` | Positive integer quantity; positive captured price; one row per dish/order |
-| `PAYMENT` | `payment_id` | Unique `order_id` → `FOOD_ORDER` | CASH/ONLINE; positive amount; PENDING/SUCCESS/FAILED; success requires timestamp |
-| `DELIVERY` | `order_id` | `order_id` → `FOOD_ORDER`; `partner_id` → `DELIVERY_PARTNER` | One delivery/order; pickup ≥ assignment; completion requires pickup and ordered timestamps |
-
-Customer and Delivery Partner are a **total, overlapping specialization** of APP_USER. Every application-created user has at least one role. Admin is an external classroom operator, rather than a stored third subtype. This schema has no reviews or rating fields.
-
-Users, orders and payments use Oracle sequences. Restaurant/food creation currently allocates IDs using table locks; these are not identity columns.
-
-### Key relational invariants
-
-- Every dish in an order belongs to its selected restaurant.
-- Checkout creates an order, at least one line and pending payment atomically.
-- Captured `agreed_unit_price` preserves old order totals after menu edits.
-- Total is derived: `SUM(quantity × agreed_unit_price) + delivery_fee`.
-- Workflow: PLACED → ACCEPTED → PREPARING → READY → OUT_FOR_DELIVERY → DELIVERED. Cancellation is allowed while PLACED or ACCEPTED.
-- Only an available partner can take a ready order. Assignment marks them busy; completion releases them.
-- Online payment must succeed before pickup; delivery completion requires successful payment matching the total.
-- Removing one user role keeps their other role. Referenced order/delivery history is protected.
-
-Java enforces these cross-table rules; direct SQL must also respect them. [Relations and keys](docs/relations/RELATIONAL_SCHEMA.md) · [EER diagram](docs/relations/Food_Delivery_EER.drawio) · [Normalization](docs/relations/NORMALIZATION_WORKSHEET.md)
-
-## Database commands
-
-Follow `database/README.md` and run the DDL and seed scripts in order. After the expanded seed, run `database/dml/04_more_food_and_customers.sql` for six additional customers and ten dishes. Do not rerun initial creation scripts against an initialized schema.
-
-## Verification and submission
-
-The service suite previously passed 55 Oracle checks. Additional rollback-only tests verified the corrected existing-partner → Both case and protected removals. HTTPS tests verified concurrent profile creation, distinct IDs and visibility to independent clients; disposable verification profiles were removed. GitHub Actions compiles Java and checks JavaScript syntax; it does not run Oracle integration tests.
-
-[Demonstration](docs/DEMONSTRATION_GUIDE.md) · [Verification history](docs/VERIFICATION.md) · [Phase 2 PPT](docs/submission/Food_Delivery_System_Phase2.pptx)
-
-Original presentation/screenshots predate the newest interface and should be refreshed before final submission. Authentication, real payments, refunds and GPS tracking remain outside the current scope.
-
-## Preserved project contents
-
-Both previous repositories and their Git histories were merged without dropping source files. [Preservation record](docs/repository/CONSOLIDATION.md) · [File manifest and hashes](docs/repository/MERGE_MANIFEST.json) · [Hosted website source](frontend/site/)
+The Oracle JDBC driver is included. Provision Oracle, apply compatible schema
+and seed scripts, set `APP_PROFILE=oracle`, `ORACLE_URL`, `ORACLE_USER` and
+`ORACLE_PASSWORD`, then verify CRUD against that database. The dev DDL has
+H2-specific drop syntax and should not be run unchanged on Oracle.
+Do not commit real credentials. The `.env.example` documents environment
+variables; Spring Boot does not automatically load that file.
